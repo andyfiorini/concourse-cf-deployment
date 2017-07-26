@@ -1,8 +1,6 @@
 ---
 jobs:
 - name: deploy-cf-sandbox
-  serial_groups: [sandbox]
-  serial: true
   plan:
   - aggregate:
     - get: master-bosh-root-cert
@@ -14,8 +12,6 @@ jobs:
     - get: cf-stemcell
       trigger: true
     - get: cf-release
-      trigger: true
-    - get: uaa-customized-release
       trigger: true
     - get: java-buildpack-release
       trigger: true
@@ -34,8 +30,6 @@ jobs:
     - get: staticfile-buildpack-release
       trigger: true
     - get: dotnet-core-buildpack-release
-      trigger: true
-    - get: cg-s3-secureproxy-release
       trigger: true
   - task: cf-sandbox-manifest
     config:
@@ -74,8 +68,6 @@ jobs:
       - cf-stemcell/*.tgz
 
 - name: deploy-diego-sandbox
-  serial_groups: [sandbox]
-  serial: true
   plan:
   - aggregate:
     - get: cf-deployment-sandbox
@@ -100,8 +92,8 @@ jobs:
       trigger: true
     - get: garden-runc-release
       trigger: true
-    - get: terraform-yaml
-      resource: terraform-yaml-sandbox
+#    - get: terraform-yaml
+#      resource: terraform-yaml-sandbox
   - task: generate-diego-sandbox-manifest
     config:
       platform: linux
@@ -151,43 +143,43 @@ jobs:
       PLATFORM_ORGANIZATION: {{platform-organization-sandbox}}
       PLATFORM_SPACE: {{platform-space-sandbox}}
 
-- name: terraform-plan-sandbox
-  plan:
-  - aggregate:
-    - get: terraform-templates
-      resource: terraform-config-sandbox
-      trigger: true
-    - get: pipeline-tasks
-  - task: terraform-plan
-    tags:
-    - iaas
-    file: terraform-templates/terraform/terraform-apply.yml
-    params: &tf-sandbox
-      TERRAFORM_ACTION: plan
-      TEMPLATE_SUBDIR: terraform
-      STACK_NAME: cf-sandbox
-      S3_TFSTATE_BUCKET: {{tf-state-bucket}}
-      AWS_DEFAULT_REGION: {{aws-region}}
-      CF_API: {{cf-api-url-sandbox}}
-      CF_CLIENT_ID: {{cf-client-id-sandbox}}
-      CF_CLIENT_SECRET: {{cf-client-secret-sandbox}}
-      TF_VAR_remote_state_bucket: {{tf-state-bucket}}
-      TF_VAR_iaas_stack_name: sandbox
-
-- name: terraform-apply-sandbox
-  plan:
-  - aggregate:
-    - get: terraform-templates
-      resource: terraform-config-sandbox
-      passed: [terraform-plan-sandbox]
-    - get: pipeline-tasks
-  - task: terraform-apply
-    file: terraform-templates/terraform/terraform-apply.yml
-    tags:
-    - iaas
-    params:
-      <<: *tf-sandbox
-      TERRAFORM_ACTION: apply
+#- name: terraform-plan-sandbox
+#  plan:
+#  - aggregate:
+#    - get: terraform-templates
+#      resource: terraform-config-sandbox
+#      trigger: true
+#    - get: pipeline-tasks
+#  - task: terraform-plan
+#    tags:
+#    - iaas
+#    file: terraform-templates/terraform/terraform-apply.yml
+#    params: &tf-sandbox
+#      TERRAFORM_ACTION: plan
+#      TEMPLATE_SUBDIR: terraform
+#      STACK_NAME: cf-sandbox
+#      S3_TFSTATE_BUCKET: {{tf-state-bucket}}
+#      AWS_DEFAULT_REGION: {{aws-region}}
+#      CF_API: {{cf-api-url-sandbox}}
+#      CF_CLIENT_ID: {{cf-client-id-sandbox}}
+#      CF_CLIENT_SECRET: {{cf-client-secret-sandbox}}
+#      TF_VAR_remote_state_bucket: {{tf-state-bucket}}
+#      TF_VAR_iaas_stack_name: sandbox
+#
+#- name: terraform-apply-sandbox
+#  plan:
+#  - aggregate:
+#    - get: terraform-templates
+#      resource: terraform-config-sandbox
+#      passed: [terraform-plan-sandbox]
+#    - get: pipeline-tasks
+#  - task: terraform-apply
+#    file: terraform-templates/terraform/terraform-apply.yml
+#    tags:
+#    - iaas
+#    params:
+#      <<: *tf-sandbox
+#      TERRAFORM_ACTION: apply
 
 - name: smoke-tests-sandbox
   serial_groups: [sandbox]
@@ -247,25 +239,30 @@ resources:
     paths:
     - cf-*.yml
 
-- name: terraform-config-sandbox
-  type: git
-  source:
-    uri: {{cf-manifests-git-url}}
-    branch: {{cf-manifests-git-branch-sandbox}}
-    paths:
-    - terraform/*
+#- name: terraform-config-sandbox
+#  type: git
+#  source:
+#    uri: {{cf-manifests-git-url}}
+#    branch: {{cf-manifests-git-branch-sandbox}}
+#    paths:
+#    - terraform/*
 
 - name: common-sandbox
-  type: cg-common
+  type: s3-iam
   source:
     bucket_name: {{cf-private-sandbox-bucket}}
+    access_key_id: {{private-access-key-id}}
+    secret_access_key: {{private-secret-access-key}}
+    region: {{aws-region}}
+#    version: {path: "*yml"}
+    regexp: master-bosh-root-cert/(.*).crt
+    regexp: (.*).yml
     secrets_files:
     - cf-sandbox.main.yml
     - cf-sandbox.external.yml
     - diego-sandbox.yml
     secrets_passphrase: {{cf-private-sandbox-passphrase}}
     bosh_cert: bosh.pem
-    region: {{aws-region}}
 
 - name: cf-stemcell
   type: bosh-io-stemcell
@@ -330,12 +327,12 @@ resources:
     paths:
     - diego/*
 
-- name: terraform-yaml-sandbox
-  type: s3-iam
-  source:
-    bucket: {{tf-state-bucket}}
-    versioned_file: {{tf-state-file-sandbox}}
-    region_name: {{aws-region}}
+#- name: terraform-yaml-sandbox
+#  type: s3-iam
+#  source:
+#    bucket: {{tf-state-bucket}}
+#    versioned_file: {{tf-state-file-sandbox}}
+#    region_name: {{aws-region}}
 
 - name: diego-release
   type: bosh-io-release
@@ -396,16 +393,16 @@ groups:
 - name: all
   jobs:
   - deploy-cf-sandbox
-  - terraform-plan-sandbox
-  - terraform-apply-sandbox
+#  - terraform-plan-sandbox
+#  - terraform-apply-sandbox
   - deploy-diego-sandbox
   - uaa-smoke-tests-sandbox
   - smoke-tests-sandbox
 - name: sandbox
   jobs:
   - deploy-cf-sandbox
-  - terraform-plan-sandbox
-  - terraform-apply-sandbox
+#  - terraform-plan-sandbox
+#  - terraform-apply-sandbox
   - deploy-diego-sandbox
   - uaa-smoke-tests-sandbox
   - smoke-tests-sandbox
