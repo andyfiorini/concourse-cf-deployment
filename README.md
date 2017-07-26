@@ -1,6 +1,6 @@
-## 18F Cloud Foundry Bosh Deployment Manifests and Concourse pipeline
+## Altoros Cloud Foundry Bosh Deployment Manifests and Concourse pipeline
 
-This repo contains the source for the Bosh deployment manifest and deployment pipeline for the 18F Cloud Foundry deployment.
+This repo contains the source for the Bosh deployment manifest and deployment pipeline for a Cloud Foundry deployment(Based on 18F repo).
 
 ### How to generate the final manifest:
 

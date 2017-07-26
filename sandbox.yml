@@ -1,0 +1,432 @@
+---
+jobs:
+- name: deploy-cf-sandbox
+  serial_groups: [sandbox]
+  serial: true
+  plan:
+  - aggregate:
+    - get: master-bosh-root-cert
+    - get: pipeline-tasks
+    - get: cf-manifests-sandbox
+      trigger: true
+    - get: common-sandbox
+      trigger: true
+    - get: cf-stemcell
+      trigger: true
+    - get: cf-release
+      trigger: true
+    - get: uaa-customized-release
+      trigger: true
+    - get: java-buildpack-release
+      trigger: true
+    - get: go-buildpack-release
+      trigger: true
+    - get: binary-buildpack-release
+      trigger: true
+    - get: nodejs-buildpack-release
+      trigger: true
+    - get: ruby-buildpack-release
+      trigger: true
+    - get: php-buildpack-release
+      trigger: true
+    - get: python-buildpack-release
+      trigger: true
+    - get: staticfile-buildpack-release
+      trigger: true
+    - get: dotnet-core-buildpack-release
+      trigger: true
+    - get: cg-s3-secureproxy-release
+      trigger: true
+  - task: cf-sandbox-manifest
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: andyfiorini/concourse-task
+      inputs:
+      - name: cf-manifests-sandbox
+      - name: common-sandbox
+      run:
+        path: cf-manifests-sandbox/generate-sandbox.sh
+        args:
+        - "common-sandbox/decrypted-cf-sandbox.main.yml"
+        - "common-sandbox/decrypted-cf-sandbox.external.yml"
+        - "generated-manifest/cf-sandbox.yml"
+      outputs:
+      - name: generated-manifest
+  - put: cf-deployment-sandbox
+    params: &deploy-params
+      cert: master-bosh-root-cert/master-bosh.crt
+      manifest: generated-manifest/cf-sandbox.yml
+      releases:
+      - binary-buildpack-release/*.tgz
+      - cf-release/*.tgz
+      - cg-s3-secureproxy-release/*.tgz
+      - dotnet-core-buildpack-release/*.tgz
+      - go-buildpack-release/*.tgz
+      - java-buildpack-release/*.tgz
+      - nodejs-buildpack-release/*.tgz
+      - php-buildpack-release/*.tgz
+      - python-buildpack-release/*.tgz
+      - ruby-buildpack-release/*.tgz
+      - staticfile-buildpack-release/*.tgz
+      - uaa-customized-release/*.tgz
+      stemcells:
+      - cf-stemcell/*.tgz
+
+- name: deploy-diego-sandbox
+  serial_groups: [sandbox]
+  serial: true
+  plan:
+  - aggregate:
+    - get: cf-deployment-sandbox
+      trigger: true
+    - get: master-bosh-root-cert
+      passed: [deploy-cf-sandbox]
+    - get: pipeline-tasks
+    - get: diego-manifests
+      resource: diego-manifests-sandbox
+      trigger: true
+    - get: diego-release-repo
+      params: {submodules: none}
+    - get: common-sandbox
+      trigger: true
+      passed: [deploy-cf-sandbox]
+    - get: cf-stemcell
+      trigger: true
+      passed: [deploy-cf-sandbox]
+    - get: diego-release
+      trigger: true
+    - get: cflinuxfs2-release
+      trigger: true
+    - get: garden-runc-release
+      trigger: true
+    - get: terraform-yaml
+      resource: terraform-yaml-sandbox
+  - task: generate-diego-sandbox-manifest
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: andyfiorini/concourse-task
+      inputs:
+      - name: master-bosh-root-cert
+      - name: common-sandbox
+      - name: diego-manifests
+      - name: diego-release-repo
+      - name: terraform-yaml
+      run:
+        path: diego-manifests/diego/generate.sh
+        args:
+        - common-sandbox/decrypted-diego-sandbox.yml
+        - {{cf-sandbox-bosh-deployment}}
+        - instance-count-overrides-staging.yml
+        - isolation-cells-sandbox.yml
+        - terraform-yaml/state.yml
+        - generated-manifest/diego-sandbox.yml
+      outputs:
+      - name: generated-manifest
+      params:
+        BOSH_ENVIRONMENT: {{sandbox-bosh-target}}
+        BOSH_CA_CERT: master-bosh-root-cert/master-bosh.crt
+        BOSH_CLIENT: {{sandbox-bosh-client}}
+        BOSH_CLIENT_SECRET: {{sandbox-bosh-client-secret}}
+  - put: diego-sandbox-deployment
+    params:
+      cert: master-bosh-root-cert/master-bosh.crt
+      manifest: generated-manifest/diego-sandbox.yml
+      stemcells:
+      - cf-stemcell/*.tgz
+      releases:
+      - diego-release/*.tgz
+      - garden-runc-release/*.tgz
+      - cflinuxfs2-release/*.tgz
+  - task: update-isolation-segments
+    file: diego-manifests/diego/update-isolation-segments.yml
+    params:
+      CF_API_URL: {{cf-api-url-sandbox}}
+      CF_USERNAME: {{cf-username-sandbox}}
+      CF_PASSWORD: {{cf-password-sandbox}}
+      PLATFORM_ISOLATION_SEGMENT: {{platform-isolation-segment-sandbox}}
+      PLATFORM_ORGANIZATION: {{platform-organization-sandbox}}
+      PLATFORM_SPACE: {{platform-space-sandbox}}
+
+- name: terraform-plan-sandbox
+  plan:
+  - aggregate:
+    - get: terraform-templates
+      resource: terraform-config-sandbox
+      trigger: true
+    - get: pipeline-tasks
+  - task: terraform-plan
+    tags:
+    - iaas
+    file: terraform-templates/terraform/terraform-apply.yml
+    params: &tf-sandbox
+      TERRAFORM_ACTION: plan
+      TEMPLATE_SUBDIR: terraform
+      STACK_NAME: cf-sandbox
+      S3_TFSTATE_BUCKET: {{tf-state-bucket}}
+      AWS_DEFAULT_REGION: {{aws-region}}
+      CF_API: {{cf-api-url-sandbox}}
+      CF_CLIENT_ID: {{cf-client-id-sandbox}}
+      CF_CLIENT_SECRET: {{cf-client-secret-sandbox}}
+      TF_VAR_remote_state_bucket: {{tf-state-bucket}}
+      TF_VAR_iaas_stack_name: sandbox
+
+- name: terraform-apply-sandbox
+  plan:
+  - aggregate:
+    - get: terraform-templates
+      resource: terraform-config-sandbox
+      passed: [terraform-plan-sandbox]
+    - get: pipeline-tasks
+  - task: terraform-apply
+    file: terraform-templates/terraform/terraform-apply.yml
+    tags:
+    - iaas
+    params:
+      <<: *tf-sandbox
+      TERRAFORM_ACTION: apply
+
+- name: smoke-tests-sandbox
+  serial_groups: [sandbox]
+  plan:
+  - aggregate:
+    - get: pipeline-tasks
+    - get: common
+      resource: master-bosh-root-cert
+      passed: [deploy-cf-sandbox]
+    - get: cf-deployment-sandbox
+      passed: [deploy-diego-sandbox]
+      trigger: true
+    - get: diego-sandbox-deployment
+      trigger: true
+  - task: run-errand
+    file: pipeline-tasks/bosh-errand.yml
+    params:
+      BOSH_TARGET: {{sandbox-bosh-target}}
+      BOSH_USERNAME: {{sandbox-bosh-username}}
+      BOSH_PASSWORD: {{sandbox-bosh-password}}
+      BOSH_DEPLOYMENT_NAME: {{cf-sandbox-bosh-deployment}}
+      BOSH_ERRAND: smoke_tests
+      BOSH_CACERT: common/master-bosh.crt
+      BOSH_FLAGS: "--keep-alive"
+
+- name: uaa-smoke-tests-sandbox
+  plan:
+  - aggregate:
+    - get: cf-deployment-sandbox
+      trigger: true
+      passed: [deploy-cf-sandbox]
+    - get: pipeline-tasks
+    - get: uaa-customized-release
+      trigger: true
+      passed: [deploy-cf-sandbox]
+  - task: smoke-tests
+    file: pipeline-tasks/uaa-smoke-tests.yml
+    params:
+      BASE_URL: {{uaa-url-sandbox}}
+
+resources:
+- name: master-bosh-root-cert
+  type: s3-iam
+  source:
+    bucket: {{cf-private-prod-bucket}}
+    region_name: {{aws-region}}
+    versioned_file: master-bosh.crt
+
+- name: pipeline-tasks
+  type: git
+  source:
+    uri: {{pipeline-tasks-git-url}}
+    branch: {{pipeline-tasks-git-branch}}
+
+- name: cf-manifests-sandbox
+  type: git
+  source:
+    uri: {{cf-manifests-git-url}}
+    branch: {{cf-manifests-git-branch-sandbox}}
+    paths:
+    - cf-*.yml
+
+- name: terraform-config-sandbox
+  type: git
+  source:
+    uri: {{cf-manifests-git-url}}
+    branch: {{cf-manifests-git-branch-sandbox}}
+    paths:
+    - terraform/*
+
+- name: common-sandbox
+  type: cg-common
+  source:
+    bucket_name: {{cf-private-sandbox-bucket}}
+    secrets_files:
+    - cf-sandbox.main.yml
+    - cf-sandbox.external.yml
+    - diego-sandbox.yml
+    secrets_passphrase: {{cf-private-sandbox-passphrase}}
+    bosh_cert: bosh.pem
+    region: {{aws-region}}
+
+- name: cf-stemcell
+  type: bosh-io-stemcell
+  source:
+    name: bosh-aws-xen-hvm-ubuntu-trusty-go_agent
+
+- name: cf-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/cf-release
+
+- name: java-buildpack-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/java-buildpack-release
+
+- name: go-buildpack-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/go-buildpack-release
+
+- name: binary-buildpack-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/binary-buildpack-release
+
+- name: nodejs-buildpack-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/nodejs-buildpack-release
+
+- name: ruby-buildpack-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/ruby-buildpack-release
+
+- name: php-buildpack-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/php-buildpack-release
+
+- name: python-buildpack-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/python-buildpack-release
+
+- name: staticfile-buildpack-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/staticfile-buildpack-release
+
+- name: dotnet-core-buildpack-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/dotnet-core-buildpack-release
+
+- name: diego-manifests-sandbox
+  type: git
+  source:
+    uri: {{cf-manifests-git-url}}
+    branch: {{cf-manifests-git-branch-sandbox}}
+    paths:
+    - diego/*
+
+- name: terraform-yaml-sandbox
+  type: s3-iam
+  source:
+    bucket: {{tf-state-bucket}}
+    versioned_file: {{tf-state-file-sandbox}}
+    region_name: {{aws-region}}
+
+- name: diego-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/diego-release
+
+- name: diego-release-repo
+  type: git
+  source:
+    uri: {{diego-release-repo-git-url}}
+    branch: {{diego-release-repo-git-branch}}
+    paths:
+    - releases/diego-*.yml
+
+- name: diego-sandbox-deployment
+  type: bosh-deployment
+  source:
+    target: {{sandbox-bosh-target}}
+    client_id: {{sandbox-bosh-client}}
+    client_secret: {{sandbox-bosh-client-secret}}
+    deployment: {{diego-sandbox-bosh-deployment}}
+
+- name: garden-runc-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/garden-runc-release
+
+- name: cflinuxfs2-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/cflinuxfs2-release
+
+- name: cf-deployment-sandbox
+  type: bosh-deployment
+  source:
+    target: {{sandbox-bosh-target}}
+    client_id: {{sandbox-bosh-client}}
+    client_secret: {{sandbox-bosh-client-secret}}
+    deployment: {{cf-sandbox-bosh-deployment}}
+
+- name: uaa-customized-release
+  type: s3-iam
+  source:
+    bucket: {{s3-bosh-releases-bucket}}
+    private: true
+    regexp: uaa-customized-(.*).tgz
+    region_name: {{aws-region}}
+
+- name: cg-s3-secureproxy-release
+  type: s3-iam
+  source:
+    bucket: {{s3-bosh-releases-bucket}}
+    private: true
+    regexp: secureproxy-(.*).tgz
+    region_name: {{aws-region}}
+
+resource_types:
+- name: bosh-deployment
+  type: docker-image
+  source:
+    repository: andyfiorini/bosh-deployment-resource
+
+- name: cg-common
+  type: docker-image
+  source:
+    repository: andyfiorini/cg-common-resource
+
+- name: s3-iam
+  type: docker-image
+  source:
+    repository: andyfiorini/s3-resource
+
+groups:
+- name: all
+  jobs:
+  - deploy-cf-sandbox
+  - terraform-plan-sandbox
+  - terraform-apply-sandbox
+  - deploy-diego-sandbox
+  - uaa-smoke-tests-sandbox
+  - smoke-tests-sandbox
+- name: sandbox
+  jobs:
+  - deploy-cf-sandbox
+  - terraform-plan-sandbox
+  - terraform-apply-sandbox
+  - deploy-diego-sandbox
+  - uaa-smoke-tests-sandbox
+  - smoke-tests-sandbox

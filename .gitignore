@@ -5,6 +5,7 @@ secrets.yml
 cf-secrets-staging.yml
 manifest-staging.yml
 manifest-staging.yml--
+creds.yml
 credentials.yml
 credentials.dev.yml
 **secrets*.yml
