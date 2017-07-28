@@ -2,8 +2,9 @@
 
 set -e -x
 
-SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 echo "Current dir: `pwd`"
+
+SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 SECRETS=$SCRIPTPATH/common-sandbox/cf-secrets.sandbox.main.yml
 SECRETS="${SECRETS} $SCRIPTPATH/common-sandbox/cf-secrets.sandbox.main.yml"
 MANIFEST=$SCRIPTPATH/manifest-staging.yml
