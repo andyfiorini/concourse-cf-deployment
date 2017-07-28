@@ -3,8 +3,8 @@
 set -e -x
 
 SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
-Current dir: `pwd`
-$SECRETS=""
+echo "Current dir: `pwd`"
+SECRETS=""
 MANIFEST=$SCRIPTPATH/manifest-staging.yml
 
 if [ "${#@}" -gt 0 ]
@@ -27,6 +27,5 @@ spiff merge \
   $SCRIPTPATH/cf-properties.yml \
   $SCRIPTPATH/cf-infrastructure-aws-sandbox.yml \
   $SECRETS \
-  $SECRETS2 \
   > $MANIFEST
 
