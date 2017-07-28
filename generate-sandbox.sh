@@ -4,7 +4,8 @@ set -e -x
 
 SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 
-SECRETS=$SCRIPTPATH/cf-secrets.sandbox.*.yml
+SECRETS1=$SCRIPTPATH/cf-secrets.sandbox.main.yml
+SECRETS2=$SCRIPTPATH/cf-secrets.sandbox.external.yml
 MANIFEST=$SCRIPTPATH/manifest-staging.yml
 
 if [ "${#@}" -gt 0 ]
@@ -26,6 +27,7 @@ spiff merge \
   $SCRIPTPATH/cf-jobs.yml \
   $SCRIPTPATH/cf-properties.yml \
   $SCRIPTPATH/cf-infrastructure-aws-sandbox.yml \
-  $SECRETS \
+  $SECRETS1 \
+  $SECRETS2 \
   > $MANIFEST
 
