@@ -3,9 +3,11 @@
 set -e -x
 
 SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
-
-SECRETS1=../common-sandbox/cf-secrets.sandbox.main.yml
-SECRETS2=../common-sandbox/cf-secrets.sandbox.external.yml
+Current dir: `pwd`
+#SECRETS1=common-sandbox/cf-secrets.sandbox.main.yml
+#SECRETS2=common-sandbox/cf-secrets.sandbox.external.yml
+$SECRETS1=$1
+$SECRETS1=$2
 MANIFEST=$SCRIPTPATH/manifest-staging.yml
 
 if [ "${#@}" -gt 0 ]
