@@ -581,10 +581,6 @@ properties:
         requireSpecialCharacter: 1
         expirePasswordInMonths: 6
 
-  uaa-customized:
-    template-directory:
-      govcloud
-
   statsd_injector:
     deployment: (( meta.environment ))
 

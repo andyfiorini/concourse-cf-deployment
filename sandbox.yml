@@ -308,8 +308,8 @@ resources:
   type: bosh-deployment
   source:
     target: {{sandbox-bosh-target}}
-    client_id: {{sandbox-bosh-client}}
-    client_secret: {{sandbox-bosh-client-secret}}
+    username: {{sandbox-bosh-username}}
+    password: {{sandbox-bosh-password}}
     deployment: {{cf-sandbox-bosh-deployment}}
 
 resource_types:

@@ -18,9 +18,6 @@ meta:
   etcd_release:
     name: cf
 
-  custom_release:
-    name: uaa-customized
-
   consul_servers: (( jobs.consul_z1.networks.cf1.static_ips jobs.consul_z2.networks.cf2.static_ips ))
 
   networks:
