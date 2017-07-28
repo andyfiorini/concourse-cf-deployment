@@ -451,17 +451,6 @@ jobs:
         proxy:
           servers: (( merge || jobs.router_z1.networks.cf1.static_ips jobs.router_z2.networks.cf2.static_ips))
     update: (( merge || empty_hash ))
-    uaadb:
-      address: 10.0.1.55
-      databases:
-      - name: uaadb
-        tag: uaa
-      db_scheme: postgresql
-      port: 5524
-      roles:
-      - name: uaaadmin
-        password: UAADB_PASSWORD
-      tag: admin
 
   - name: uaa_z2
     templates: (( merge || meta.uaa_z2_templates meta.metron_agent_templates ))
@@ -482,17 +471,6 @@ jobs:
         proxy:
           servers: (( merge || jobs.router_z1.networks.cf1.static_ips jobs.router_z2.networks.cf2.static_ips))
     update: (( merge || empty_hash ))
-    uaadb:
-      address: 10.0.1.55
-      databases:
-      - name: uaadb
-        tag: uaa
-      db_scheme: postgresql
-      port: 5524
-      roles:
-      - name: uaaadmin
-        password: UAADB_PASSWORD
-      tag: admin
 
   - name: stats_z1
     templates: (( merge || meta.stats_templates meta.metron_agent_templates ))
