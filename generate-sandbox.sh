@@ -4,21 +4,9 @@ set -e -x
 
 SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 echo "Current dir: `pwd`"
-SECRETS=$SCRIPTPATH/cf-secrets.yml
+SECRETS=$SCRIPTPATH/common-sandbox/cf-secrets.sandbox.main.yml
+SECRETS="${SECRETS} $SCRIPTPATH/common-sandbox/cf-secrets.sandbox.main.yml"
 MANIFEST=$SCRIPTPATH/manifest-staging.yml
-
-if [ "${#@}" -gt 0 ]
-then
-  SECRETS=''
-  eval MANIFEST=\${$#}
-  for file in "$@"
-  do
-    if test $file != "${MANIFEST}"
-    then
-      SECRETS="${SECRETS} ${file}"
-    fi
-  done
-fi
 
 spiff merge \
   $SCRIPTPATH/cf-deployment.yml \

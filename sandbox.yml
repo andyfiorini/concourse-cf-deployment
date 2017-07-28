@@ -45,8 +45,8 @@ jobs:
       run:
         path: cf-manifests-sandbox/generate-sandbox.sh
         args:
-        - "common-sandbox/cf-secrets.sandbox.main.yml"
-        - "common-sandbox/cf-secrets.sandbox.external.yml"
+        - "/common-sandbox/cf-secrets.sandbox.main.yml"
+        - "/common-sandbox/cf-secrets.sandbox.external.yml"
         - "generated-manifest/cf-sandbox.yml"
       outputs:
       - name: generated-manifest
@@ -56,17 +56,17 @@ jobs:
       manifest: generated-manifest/cf-sandbox.yml
       releases:
       - binary-buildpack-release/*.tgz
-#      - cf-release/*.tgz
-#      - dotnet-core-buildpack-release/*.tgz
-#      - go-buildpack-release/*.tgz
-#      - java-buildpack-release/*.tgz
-#      - nodejs-buildpack-release/*.tgz
-#      - php-buildpack-release/*.tgz
-#      - python-buildpack-release/*.tgz
-#      - ruby-buildpack-release/*.tgz
-#      - staticfile-buildpack-release/*.tgz
-      stemcells: []
-#      - cf-stemcell/*.tgz
+      - cf-release/*.tgz
+      - dotnet-core-buildpack-release/*.tgz
+      - go-buildpack-release/*.tgz
+      - java-buildpack-release/*.tgz
+      - nodejs-buildpack-release/*.tgz
+      - php-buildpack-release/*.tgz
+      - python-buildpack-release/*.tgz
+      - ruby-buildpack-release/*.tgz
+      - staticfile-buildpack-release/*.tgz
+      stemcells: 
+      - cf-stemcell/*.tgz
 
 - name: deploy-diego-sandbox
   plan:
