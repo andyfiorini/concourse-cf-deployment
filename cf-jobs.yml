@@ -135,8 +135,6 @@ meta:
         from: nats_z2
 
   router_z1_templates:
-  - name: secureproxy
-    release: secureproxy
   - name: consul_agent
     release: (( meta.consul_release.name ))
   - name: gorouter
@@ -149,8 +147,6 @@ meta:
         from: nats_z1
 
   router_z2_templates:
-  - name: secureproxy
-    release: secureproxy
   - name: consul_agent
     release: (( meta.consul_release.name ))
   - name: gorouter
@@ -827,20 +823,6 @@ properties:
 
   routing_api:
     enabled: (( merge || nil ))
-
-  secureproxy:
-    listen_port: 80
-    proxy_port: 85
-
-    # Expose gorouter health check for ELB
-    # For this to work, router.load_balancer_healthy_threshold must be set to 0
-    custom_server_config: |-
-      server {
-        listen 81;
-        location / {
-          proxy_pass http://localhost:8080/health;
-        }
-      }
 
   syslog_daemon_config: ~
 
