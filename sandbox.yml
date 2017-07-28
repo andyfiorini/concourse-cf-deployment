@@ -37,7 +37,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: andyfiorini/concourse-task
+          repository: 18fgsa/concourse-task
       inputs:
       - name: cf-manifests-sandbox
       - name: common-sandbox
@@ -218,12 +218,21 @@ jobs:
       BASE_URL: {{uaa-url-sandbox}}
 
 resources:
+#- name: master-bosh-root-cert
+#  type: s3-iam
+#  source:
+#    bucket: {{cf-private-prod-bucket}}
+#    region_name: {{aws-region}}
+#    versioned_file: master-bosh.crt
+# 
 - name: master-bosh-root-cert
-  type: s3-iam
+  type: 18f-s3
   source:
-    bucket: {{cf-private-prod-bucket}}
+    bucket: {{cf-private-sandbox-bucket}}
     region_name: {{aws-region}}
-    versioned_file: master-bosh.crt
+    access_key_id: {{private-access-key-id}}
+    secret_access_key: {{private-secret-access-key}}
+    region: {{aws-region}}
 
 - name: pipeline-tasks
   type: git
@@ -248,14 +257,12 @@ resources:
 #    - terraform/*
 
 - name: common-sandbox
-  type: s3
+  type: 18f-s3
   source:
     bucket: {{cf-private-sandbox-bucket}}
-    region_name: {{aws-region}}
+    region: {{aws-region}}
     access_key_id: {{private-access-key-id}}
     secret_access_key: {{private-secret-access-key}}
-# regexp: "v1.0.0.yml"
-    version: "/"
 
 - name: cf-stemcell
   type: bosh-io-stemcell
@@ -381,6 +388,12 @@ resource_types:
   type: docker-image
   source:
     repository: agf234/s3-resource
+
+- name: 18f-s3
+  type: docker-image
+  source:
+    repository: 18fgsa/s3-resource-simple
+
 
 groups:
 - name: all
