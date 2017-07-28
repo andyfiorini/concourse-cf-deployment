@@ -500,7 +500,7 @@ jobs:
       route_registrar:
         routes: (( merge || meta.api_routes ))
       nfs_server: (( meta.nfs_server ))
-    update: (( merge ))
+    update: (( merge || empty_hash ))
 
   - name: api_z2
     templates: (( merge || meta.api_z2_templates meta.metron_agent_templates ))
