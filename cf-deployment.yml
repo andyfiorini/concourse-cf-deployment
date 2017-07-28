@@ -16,7 +16,6 @@ meta:
   - {name: python-buildpack, version: latest}
   - {name: staticfile-buildpack, version: latest}
   - {name: dotnet-core-buildpack, version: latest}
-  - {name: secureproxy, version: latest}
 
 name: (( meta.environment ))
 
