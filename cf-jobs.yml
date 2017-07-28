@@ -452,11 +452,6 @@ jobs:
           servers: (( merge || jobs.router_z1.networks.cf1.static_ips jobs.router_z2.networks.cf2.static_ips))
     update: (( merge || empty_hash ))
     uaadb: null
-    clients:
-      gorouter:
-        authorities: routing.routes.read, routing.router_groups.read
-        authorized-grant-types: client_credentials,refresh_token
-        secret: GOROUTER_SECRET
 
   - name: uaa_z2
     templates: (( merge || meta.uaa_z2_templates meta.metron_agent_templates ))
