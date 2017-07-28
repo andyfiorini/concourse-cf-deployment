@@ -4,7 +4,7 @@ set -e -x
 
 SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 
-SECRETS=$SCRIPTPATH/cf-secrets-staging.yml
+SECRETS=$SCRIPTPATH/cf-secrets.sandbox.*.yml
 MANIFEST=$SCRIPTPATH/manifest-staging.yml
 
 if [ "${#@}" -gt 0 ]
