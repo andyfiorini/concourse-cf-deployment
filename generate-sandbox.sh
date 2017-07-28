@@ -1,5 +1,5 @@
 #!/bin/sh
-
+  
 set -e -x
 
 echo "Current dir: `pwd`"
