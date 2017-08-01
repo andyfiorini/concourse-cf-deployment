@@ -331,7 +331,8 @@ resource_types:
 - name: 18f-s3
   type: docker-image
   source:
-    repository: 18fgsa/s3-resource-simple
+    repository: agf234/s3-resource-simple
+    tag: latest
 
 
 groups:
