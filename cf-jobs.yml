@@ -214,9 +214,9 @@ meta:
     - (( "*.login." .meta.service_domain ))
     - (( "uaa." .meta.service_domain ))
     - (( "*.uaa." .meta.service_domain ))
-    # health_check:
-    #   name: uaa-healthcheck
-    #   script_path: /var/vcap/jobs/uaa/bin/health_check
+     health_check:
+       name: uaa-healthcheck
+       script_path: /var/vcap/jobs/uaa/bin/health_check
 
   uaa_z1_templates:
   - name: uaa
