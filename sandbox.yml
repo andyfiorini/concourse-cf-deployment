@@ -45,8 +45,8 @@ jobs:
       run:
         path: ./cf-manifests-sandbox/generate-sandbox.sh
         args:
-        - "./common-sandbox/cf-secrets.sandbox.main.yml"
-        - "./common-sandbox/cf-secrets.sandbox.external.yml"
+        - "common-sandbox/cf-secrets.sandbox.main.yml"
+        - "common-sandbox/cf-secrets.sandbox.external.yml"
         - "generated-manifest/cf-sandbox.yml"
       outputs:
       - name: generated-manifest

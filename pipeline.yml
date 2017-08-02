@@ -43,7 +43,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: andyfiorini/concourse-task
+          repository: agf234/concourse-task
       inputs:
       - name: cf-manifests-development
       - name: common-development
