@@ -199,8 +199,8 @@ resources:
   source:
     uri: {{cf-manifests-git-url}}
     branch: {{cf-manifests-git-branch-sandbox}}
-    paths:
-    - cf-*.yml
+    #paths:
+    #- cf-*.yml
 
 - name: common-sandbox
   type: 18f-s3
